@@ -1,0 +1,2 @@
+spring-boot-demo :B^Zhttps://github.com/spring-projects/spring-boot/spring-boot-starter-parent/spring-boot-demoRcom.abhishek:spring-boot-demobYParent pom providing dependency and plugin management for applications
+		built with Maven
