@@ -19,13 +19,58 @@ pipeline {
         sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn clean package'
       }
     }
+    stage('Install Java 17') {
+      steps {
+        sh '''
+          # Print current Java version
+          echo "Current Java version:"
+          java -version
+          
+          # Install Java 17
+          apt-get update
+          apt-get install -y wget apt-transport-https gnupg lsb-release
+          
+          # Add Adoptium repository
+          wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | apt-key add -
+          echo "deb https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/adoptium.list
+          
+          apt-get update
+          apt-get install -y temurin-17-jdk
+          
+          # Temporarily save original JAVA_HOME
+          ORIGINAL_JAVA_HOME=$JAVA_HOME
+          ORIGINAL_PATH=$PATH
+          
+          # Print installed Java versions
+          echo "Installed Java versions:"
+          ls -la /usr/lib/jvm/
+          
+          echo "Java 17 installed successfully"
+        '''
+      }
+    }
     stage('Static Code Analysis') {
       environment {
         SONAR_URL = "http://3.239.114.111:9000"
       }
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+          sh '''
+            # Temporarily set JAVA_HOME to Java 17 for SonarQube
+            export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+            export PATH=$JAVA_HOME/bin:$PATH
+            
+            # Verify Java version for SonarQube
+            echo "Java version for SonarQube analysis:"
+            java -version
+            
+            # Run SonarQube with Java 17
+            cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}
+            
+            # Revert to original Java for remaining pipeline if needed
+            # export JAVA_HOME=$ORIGINAL_JAVA_HOME
+            # export PATH=$ORIGINAL_PATH
+          '''
         }
       }
     }
