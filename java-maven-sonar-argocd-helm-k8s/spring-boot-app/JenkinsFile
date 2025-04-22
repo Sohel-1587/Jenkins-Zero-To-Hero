@@ -37,10 +37,6 @@ pipeline {
           apt-get update
           apt-get install -y temurin-17-jdk
           
-          # Temporarily save original JAVA_HOME
-          ORIGINAL_JAVA_HOME=$JAVA_HOME
-          ORIGINAL_PATH=$PATH
-          
           # Print installed Java versions
           echo "Installed Java versions:"
           ls -la /usr/lib/jvm/
@@ -64,12 +60,11 @@ pipeline {
             echo "Java version for SonarQube analysis:"
             java -version
             
-            # Run SonarQube with Java 17
-            cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}
-            
-            # Revert to original Java for remaining pipeline if needed
-            # export JAVA_HOME=$ORIGINAL_JAVA_HOME
-            # export PATH=$ORIGINAL_PATH
+            # Run SonarQube with Java 17 - Using sonar.token instead of sonar.login
+            cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar \
+              -Dsonar.token=$SONAR_AUTH_TOKEN \
+              -Dsonar.host.url=${SONAR_URL} \
+              -X
           '''
         }
       }
